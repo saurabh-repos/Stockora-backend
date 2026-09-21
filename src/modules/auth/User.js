@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
       enum: ['SuperAdmin', 'Admin', 'Manager', 'Staff'],
       default: 'Staff',
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     profileImage: {
       type: String,
       default: '',
