@@ -22,13 +22,53 @@ app.use((req, res, next) => {
 // Body parser
 app.use(express.json());
 
-// Server Logs
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-} else {
-  // In production, we might want slightly less verbose logs
-  app.use(morgan('combined'));
-}
+// ─── Logging ────────────────────────────────────────────────────────────────
+// ANSI color helpers (work in Render logs and local terminals)
+const c = {
+  reset:  '\x1b[0m',
+  bold:   '\x1b[1m',
+  dim:    '\x1b[2m',
+  cyan:   '\x1b[36m',
+  green:  '\x1b[32m',
+  yellow: '\x1b[33m',
+  red:    '\x1b[31m',
+  blue:   '\x1b[34m',
+  magenta:'\x1b[35m',
+  white:  '\x1b[37m',
+};
+
+const log = {
+  info:    (msg) => console.log(`${c.cyan}[INFO]${c.reset}  ${msg}`),
+  success: (msg) => console.log(`${c.green}[OK]${c.reset}    ${msg}`),
+  warn:    (msg) => console.warn(`${c.yellow}[WARN]${c.reset}  ${msg}`),
+  error:   (msg) => console.error(`${c.red}[ERROR]${c.reset} ${msg}`),
+  event:   (msg) => console.log(`${c.magenta}[EVENT]${c.reset} ${msg}`),
+};
+
+// Custom morgan token: colored HTTP method
+morgan.token('colored-method', (req) => {
+  const colors = { GET: c.green, POST: c.blue, PUT: c.yellow, DELETE: c.red, PATCH: c.magenta };
+  const color = colors[req.method] || c.white;
+  return `${color}${c.bold}${req.method.padEnd(6)}${c.reset}`;
+});
+
+// Custom morgan token: colored status code
+morgan.token('colored-status', (req, res) => {
+  const s = res.statusCode;
+  const color = s >= 500 ? c.red : s >= 400 ? c.yellow : s >= 300 ? c.cyan : c.green;
+  return `${color}${s}${c.reset}`;
+});
+
+// Custom morgan token: timestamp
+morgan.token('ts', () => {
+  return `${c.dim}${new Date().toISOString()}${c.reset}`;
+});
+
+const morganFormat = process.env.NODE_ENV !== 'production'
+  ? ':ts :colored-method :url :colored-status :response-time ms - :res[content-length]b'
+  : 'combined';
+
+app.use(morgan(morganFormat));
 
 // Cookie parser
 const cookieParser = require('cookie-parser');
@@ -100,5 +140,35 @@ app.get('/health', (req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+const ENV  = process.env.NODE_ENV || 'development';
 
-app.listen(PORT, console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => {
+  const divider = `${c.dim}${'─'.repeat(52)}${c.reset}`;
+  console.log('');
+  console.log(divider);
+  console.log(`  ${c.bold}${c.cyan}🚀 Stockora Backend${c.reset}`);
+  console.log(divider);
+  log.success(`Server started on port ${c.bold}${PORT}${c.reset}`);
+  log.info(`Environment  : ${c.bold}${ENV}${c.reset}`);
+  log.info(`Started at   : ${c.bold}${new Date().toLocaleString()}${c.reset}`);
+  log.info(`Health check : ${c.bold}http://localhost:${PORT}/api/health${c.reset}`);
+  if (allowedOrigins.length) {
+    log.info(`CORS origins :`);
+    allowedOrigins.forEach(o => console.log(`             ${c.dim}↳${c.reset} ${o}`));
+  }
+  console.log(divider);
+  console.log('');
+});
+
+// ─── Graceful Shutdown ───────────────────────────────────────────────────────
+process.on('unhandledRejection', (err) => {
+  log.error(`Unhandled Promise Rejection: ${err.message}`);
+  log.warn('Shutting down server gracefully...');
+  server.close(() => process.exit(1));
+});
+
+process.on('uncaughtException', (err) => {
+  log.error(`Uncaught Exception: ${err.message}`);
+  log.warn('Shutting down server immediately...');
+  process.exit(1);
+});
