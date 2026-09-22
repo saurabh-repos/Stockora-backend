@@ -25,6 +25,17 @@ const prodFormat = combine(
   json()
 );
 
+// ─── Plain format for log files (no ANSI color codes) ───────────────────────
+const fileFormat = combine(
+  errors({ stack: true }),
+  timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  printf(({ level, message, timestamp: ts, stack }) => {
+    return stack
+      ? `[${ts}] ${level.toUpperCase()}: ${message}\n${stack}`
+      : `[${ts}] ${level.toUpperCase()}: ${message}`;
+  })
+);
+
 // ─── Daily rotating file transport ──────────────────────────────────────────
 const fileTransport = new DailyRotateFile({
   dirname: path.join(__dirname, '../../../logs'),
@@ -33,7 +44,8 @@ const fileTransport = new DailyRotateFile({
   zippedArchive: true,
   maxSize: '20m',
   maxFiles: '14d', // Keep last 14 days
-  level: 'info',
+  level: 'http',  // captures http (Morgan) + info + warn + error
+  format: fileFormat,
 });
 
 const errorFileTransport = new DailyRotateFile({
@@ -44,11 +56,14 @@ const errorFileTransport = new DailyRotateFile({
   maxSize: '20m',
   maxFiles: '30d',
   level: 'error',
+  format: fileFormat,
 });
 
 // ─── Logger instance ─────────────────────────────────────────────────────────
+// Level hierarchy: error < warn < info < http < verbose < debug < silly
+// Setting 'http' captures Morgan request logs + info/warn/error in console
 const logger = createLogger({
-  level: isDev ? 'debug' : 'info',
+  level: isDev ? 'http' : 'info',
   format: isDev ? devFormat : prodFormat,
   transports: [
     new transports.Console(),
