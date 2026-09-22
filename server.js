@@ -61,9 +61,17 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/procurement', procurementRoutes);
 app.use('/api/audit-logs', auditRoutes);
 
-// Health check endpoint
+// Health check endpoint (API)
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'success', message: 'Backend is healthy' });
+});
+
+// Root health check endpoint (Useful for keeping Render awake via UptimeRobot)
+app.get('/', (req, res) => {
+  res.status(200).send('Inventory Management Server is Awake!');
+});
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
 });
 
 // Register error middleware (must be after routes)
