@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const InventoryTransaction = require('./InventoryTransaction');
 const Product = require('../catalog/Product');
 const asyncHandler = require('../../core/utils/asyncHandler');
-
 // @desc    Record a new inventory transaction and update product stock
 // @route   POST /api/inventory/transaction
 // @access  Private

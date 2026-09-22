@@ -1,6 +1,5 @@
 const Product = require('./Product');
 const asyncHandler = require('../../core/utils/asyncHandler');
-
 // @desc    Get all active products (with optional search)
 // @route   GET /api/products
 // @access  Private

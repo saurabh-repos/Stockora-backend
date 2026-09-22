@@ -5,6 +5,7 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const User = require('./User');
 const asyncHandler = require('../../core/utils/asyncHandler');
+const { logActivity } = require('../audit/auditService');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -42,6 +43,15 @@ const authUser = asyncHandler(async (req, res) => {
     if (user.isTwoFactorEnabled) {
       return res.json({ requires2FA: true, userId: user._id });
     }
+    logActivity({
+      shop: user.shop,
+      user,
+      action: 'USER_LOGIN',
+      entityType: 'User',
+      entityId: user._id,
+      details: { method: 'password' },
+      ipAddress: req.ip,
+    });
     sendTokenResponse(user, 200, res);
   } else {
     res.status(401);

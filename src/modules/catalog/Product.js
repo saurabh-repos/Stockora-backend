@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('../audit/auditPlugin');
 
 const productSchema = new mongoose.Schema(
   {
@@ -100,6 +101,9 @@ const productSchema = new mongoose.Schema(
 
 // Create index for search optimization
 productSchema.index({ name: 'text', sku: 'text', barcode: 'text', category: 'text' });
+
+// Apply audit plugin - auto-logs all create/update/delete
+productSchema.plugin(auditPlugin);
 
 const Product = mongoose.model('Product', productSchema);
 module.exports = Product;

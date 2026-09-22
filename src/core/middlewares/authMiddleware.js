@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../../modules/auth/User');
 const asyncHandler = require('../utils/asyncHandler');
+const { getAuditContext } = require('../../modules/audit/auditContext');
 
 const protect = asyncHandler(async (req, res, next) => {
   let token = req.cookies.jwt;
@@ -9,6 +10,9 @@ const protect = asyncHandler(async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select('-password');
+      // Inject user into the request-scoped audit context
+      const store = getAuditContext();
+      if (store) store.user = req.user;
       next();
     } catch (error) {
       console.error(error);

@@ -3,7 +3,6 @@ const Sale = require('./Sale');
 const Product = require('../catalog/Product');
 const InventoryTransaction = require('../inventory/InventoryTransaction');
 const asyncHandler = require('../../core/utils/asyncHandler');
-
 // Helper to generate Invoice Number (e.g., INV-1001)
 const generateInvoiceNumber = async (shopId) => {
   const lastSale = await Sale.findOne({ shop: shopId }).sort({ createdAt: -1 });

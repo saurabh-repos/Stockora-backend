@@ -6,7 +6,7 @@ dotenv.config({ path: '../.env' }); // Load env if needed
 const updateToSuperAdmin = async () => {
   try {
     // Hardcoding URI for safety
-    await mongoose.connect('mongodb+srv://saurabhpandey:wigSnNDKlZ0UskBH@cluster0.jm75ivk.mongodb.net/inventory');
+    await mongoose.connect(process.env.MONGO_URI);
     
     const db = mongoose.connection.db;
     const usersCollection = db.collection('users');

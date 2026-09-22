@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const auditPlugin = require('../audit/auditPlugin');
 
 const userSchema = new mongoose.Schema(
   {
@@ -56,10 +57,8 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 const crypto = require('crypto');
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
-  }
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
@@ -80,6 +79,9 @@ userSchema.methods.getResetPasswordToken = function () {
 
   return resetToken;
 };
+
+// Apply audit plugin - auto-logs all create/update/delete with smart action detection
+userSchema.plugin(auditPlugin);
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;

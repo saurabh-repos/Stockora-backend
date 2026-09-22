@@ -22,7 +22,8 @@ const createProductSchema = Joi.object({
   mrp: Joi.number().min(0).allow(null, ''),
   gstPercent: Joi.number().min(0).max(100).allow(null, ''),
   minimumStock: Joi.number().min(0).allow(null, ''),
-  boxCoverage: Joi.number().min(0).allow(null, '')
+  boxCoverage: Joi.number().min(0).allow(null, ''),
+  images: Joi.array().items(Joi.string()).optional()
 });
 
 const updateProductSchema = Joi.object({
@@ -37,7 +38,8 @@ const updateProductSchema = Joi.object({
   mrp: Joi.number().min(0).allow(null, ''),
   gstPercent: Joi.number().min(0).max(100).allow(null, ''),
   minimumStock: Joi.number().min(0).allow(null, ''),
-  boxCoverage: Joi.number().min(0).allow(null, '')
+  boxCoverage: Joi.number().min(0).allow(null, ''),
+  images: Joi.array().items(Joi.string()).optional()
 });
 
 module.exports = {

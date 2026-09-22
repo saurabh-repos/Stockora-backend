@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('../audit/auditPlugin');
 
 const saleItemSchema = new mongoose.Schema({
   product: {
@@ -83,6 +84,8 @@ const saleSchema = new mongoose.Schema(
 
 // Index to quickly fetch a shop's sales
 saleSchema.index({ shop: 1, createdAt: -1 });
+
+saleSchema.plugin(auditPlugin);
 
 const Sale = mongoose.model('Sale', saleSchema);
 module.exports = Sale;

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('../audit/auditPlugin');
 
 const customerSchema = new mongoose.Schema(
   {
@@ -43,6 +44,8 @@ const customerSchema = new mongoose.Schema(
 
 // Search optimization index
 customerSchema.index({ shop: 1, name: 1 });
+
+customerSchema.plugin(auditPlugin);
 
 const Customer = mongoose.model('Customer', customerSchema);
 module.exports = Customer;

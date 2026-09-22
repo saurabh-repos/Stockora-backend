@@ -1,6 +1,5 @@
 const Customer = require('./Customer');
 const asyncHandler = require('../../core/utils/asyncHandler');
-
 // @desc    Get all active customers
 // @route   GET /api/customers
 // @access  Private

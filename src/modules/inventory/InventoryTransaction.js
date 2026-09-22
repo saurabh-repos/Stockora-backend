@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('../audit/auditPlugin');
 
 const inventoryTransactionSchema = new mongoose.Schema(
   {
@@ -55,6 +56,8 @@ const inventoryTransactionSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+inventoryTransactionSchema.plugin(auditPlugin);
 
 const InventoryTransaction = mongoose.model('InventoryTransaction', inventoryTransactionSchema);
 module.exports = InventoryTransaction;
