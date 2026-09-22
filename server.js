@@ -51,23 +51,10 @@ const log = {
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
-// Enable CORS
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  process.env.FRONTEND_URL, // Vercel frontend URL (set in Render env vars)
-].filter(Boolean); // Remove undefined values
-
+// Enable CORS – allow all origins
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error(`CORS policy: Origin ${origin} not allowed`));
-  },
-  credentials: true
+  origin: true,      // reflects the request origin, allowing any domain
+  credentials: true, // allow cookies / Authorization headers
 }));
 
 // Route files
