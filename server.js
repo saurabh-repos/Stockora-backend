@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./src/core/db');
 const { runWithAuditContext } = require('./src/modules/audit/auditContext');
+const morgan = require('morgan');
 
 // Load env vars
 dotenv.config();
@@ -21,13 +22,34 @@ app.use((req, res, next) => {
 // Body parser
 app.use(express.json());
 
+// Server Logs
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+} else {
+  // In production, we might want slightly less verbose logs
+  app.use(morgan('combined'));
+}
+
 // Cookie parser
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 // Enable CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.FRONTEND_URL, // Vercel frontend URL (set in Render env vars)
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'], // Frontend URLs
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+  },
   credentials: true
 }));
 
