@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./src/core/db');
 const { runWithAuditContext } = require('./src/modules/audit/auditContext');
-const morgan = require('morgan');
+// Morgan import removed
 
 // Load env vars
 dotenv.config();
@@ -45,30 +45,7 @@ const log = {
   event:   (msg) => console.log(`${c.magenta}[EVENT]${c.reset} ${msg}`),
 };
 
-// Custom morgan token: colored HTTP method
-morgan.token('colored-method', (req) => {
-  const colors = { GET: c.green, POST: c.blue, PUT: c.yellow, DELETE: c.red, PATCH: c.magenta };
-  const color = colors[req.method] || c.white;
-  return `${color}${c.bold}${req.method.padEnd(6)}${c.reset}`;
-});
-
-// Custom morgan token: colored status code
-morgan.token('colored-status', (req, res) => {
-  const s = res.statusCode;
-  const color = s >= 500 ? c.red : s >= 400 ? c.yellow : s >= 300 ? c.cyan : c.green;
-  return `${color}${s}${c.reset}`;
-});
-
-// Custom morgan token: timestamp
-morgan.token('ts', () => {
-  return `${c.dim}${new Date().toISOString()}${c.reset}`;
-});
-
-const morganFormat = process.env.NODE_ENV !== 'production'
-  ? ':ts :colored-method :url :colored-status :response-time ms - :res[content-length]b'
-  : 'combined';
-
-app.use(morgan(morganFormat));
+// Morgan logging removed – using basic console logs
 
 // Cookie parser
 const cookieParser = require('cookie-parser');
