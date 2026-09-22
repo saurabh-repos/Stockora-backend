@@ -1,18 +1,12 @@
 const mongoose = require('mongoose');
-
-// ANSI colors (reused from server.js style)
-const green  = '\x1b[32m';
-const red    = '\x1b[31m';
-const bold   = '\x1b[1m';
-const dim    = '\x1b[2m';
-const reset  = '\x1b[0m';
+const logger = require('./utils/logger');
 
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`${green}[OK]${reset}    MongoDB connected → ${bold}${conn.connection.host}${reset}`);
+    logger.info(`MongoDB connected → ${conn.connection.host}`);
   } catch (error) {
-    console.error(`${red}[ERROR]${reset} MongoDB connection failed: ${bold}${error.message}${reset}`);
+    logger.error(`MongoDB connection failed: ${error.message}`, { stack: error.stack });
     process.exit(1);
   }
 };
