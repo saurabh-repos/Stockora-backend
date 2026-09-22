@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./src/core/db');
 const { runWithAuditContext } = require('./src/modules/audit/auditContext');
-// Morgan import removed
+const morgan = require('morgan');
 
 // Load env vars
 dotenv.config();
@@ -45,7 +45,8 @@ const log = {
   event:   (msg) => console.log(`${c.magenta}[EVENT]${c.reset} ${msg}`),
 };
 
-// Morgan logging removed – using basic console logs
+// HTTP request logging
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Cookie parser
 const cookieParser = require('cookie-parser');
@@ -116,10 +117,7 @@ const server = app.listen(PORT, () => {
   log.info(`Environment  : ${c.bold}${ENV}${c.reset}`);
   log.info(`Started at   : ${c.bold}${new Date().toLocaleString()}${c.reset}`);
   log.info(`Health check : ${c.bold}http://localhost:${PORT}/api/health${c.reset}`);
-  if (allowedOrigins.length) {
-    log.info(`CORS origins :`);
-    allowedOrigins.forEach(o => console.log(`             ${c.dim}↳${c.reset} ${o}`));
-  }
+  log.info(`CORS origins : ${c.bold}All origins allowed${c.reset}`);
   console.log(divider);
   console.log('');
 });
