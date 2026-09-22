@@ -5,7 +5,8 @@ const auditLogSchema = new mongoose.Schema(
     shop: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Shop',
-      required: true,
+      required: false, // Optional: platform-level users (SuperAdmin) have no shop
+      default: null,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

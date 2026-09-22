@@ -20,8 +20,8 @@ const sendTokenResponse = (user, statusCode, res) => {
   const options = {
     expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    secure: true,         // must be true when sameSite is 'none'
+    sameSite: 'none'      // required for cross-site cookie sending (Vercel → Render)
   };
 
   res.status(statusCode).cookie('jwt', token, options).json({
