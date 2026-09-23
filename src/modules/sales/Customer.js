@@ -36,6 +36,10 @@ const customerSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    outstandingBalance: {
+      type: Number,
+      default: 0,
+    }
   },
   {
     timestamps: true,

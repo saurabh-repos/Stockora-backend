@@ -22,8 +22,8 @@ const recordTransaction = asyncHandler(async (req, res) => {
     const getStockEntry = (wId) => {
       let entry = product.stockLocations.find(loc => loc.warehouse.toString() === wId);
       if (!entry) {
-        entry = { warehouse: wId, quantity: 0 };
-        product.stockLocations.push(entry);
+        product.stockLocations.push({ warehouse: wId, quantity: 0 });
+        entry = product.stockLocations[product.stockLocations.length - 1];
       }
       return entry;
     };
@@ -65,6 +65,7 @@ const recordTransaction = asyncHandler(async (req, res) => {
     }
 
     // 3. Recalculate totalStock cache
+    product.markModified('stockLocations');
     product.totalStock = product.stockLocations.reduce((sum, loc) => sum + loc.quantity, 0);
 
     await product.save({ session });

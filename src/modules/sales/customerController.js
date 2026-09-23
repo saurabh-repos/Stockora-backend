@@ -1,4 +1,5 @@
 const Customer = require('./Customer');
+const CustomerPayment = require('./CustomerPayment');
 const asyncHandler = require('../../core/utils/asyncHandler');
 // @desc    Get all active customers
 // @route   GET /api/customers
@@ -60,7 +61,44 @@ const createCustomer = asyncHandler(async (req, res) => {
   res.status(201).json(customer);
 });
 
+// @desc    Receive payment for customer's outstanding balance
+// @route   POST /api/customers/:id/payments
+// @access  Private
+const receiveCustomerPayment = asyncHandler(async (req, res) => {
+  const { amount, paymentMethod, referenceNumber, notes } = req.body;
+  const customerId = req.params.id;
+
+  if (!amount || amount <= 0) {
+    res.status(400);
+    throw new Error('Valid amount is required');
+  }
+
+  const customer = await Customer.findOne({ _id: customerId, shop: req.user.shop });
+  if (!customer) {
+    res.status(404);
+    throw new Error('Customer not found');
+  }
+
+  // Create payment record
+  const payment = await CustomerPayment.create({
+    shop: req.user.shop,
+    customer: customerId,
+    amount,
+    paymentMethod: paymentMethod || 'CASH',
+    referenceNumber,
+    notes,
+    receivedBy: req.user._id
+  });
+
+  // Decrease the outstanding balance
+  customer.outstandingBalance = (customer.outstandingBalance || 0) - amount;
+  await customer.save();
+
+  res.status(201).json({ payment, outstandingBalance: customer.outstandingBalance });
+});
+
 module.exports = {
   getCustomers,
   createCustomer,
+  receiveCustomerPayment,
 };
