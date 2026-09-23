@@ -81,6 +81,7 @@ app.use(errorHandler);
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || 'localhost';
 const ENV  = process.env.NODE_ENV || 'development';
 
 const server = app.listen(PORT, () => {
@@ -89,9 +90,9 @@ const server = app.listen(PORT, () => {
   logger.info(divider);
   logger.info('  🚀  Stockora Backend');
   logger.info(divider);
-  logger.info(`Server   : http://localhost:${PORT}`);
+  logger.info(`Server   : ${HOST}`);
   logger.info(`Env      : ${ENV}`);
-  logger.info(`Health   : http://localhost:${PORT}/api/health`);
+  logger.info(`Health   : ${HOST}/api/health`);
   logger.info(`CORS     : All origins allowed`);
   logger.info(`Logs     : ./logs/stockora-<date>.log`);
   logger.info(divider);
