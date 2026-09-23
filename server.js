@@ -50,6 +50,7 @@ const superAdminRoutes  = require('./src/modules/platform/platformRoutes');
 const uploadRoutes      = require('./src/modules/upload/uploadRoutes');
 const procurementRoutes = require('./src/modules/procurement/procurementRoutes');
 const auditRoutes       = require('./src/modules/audit/auditRoutes');
+const shiftRoutes       = require('./src/modules/sales/shiftRoutes');
 
 const { errorHandler } = require('./src/core/middlewares/errorMiddleware');
 
@@ -66,6 +67,7 @@ app.use('/api/superadmin',  superAdminRoutes);
 app.use('/api/upload',      uploadRoutes);
 app.use('/api/procurement', procurementRoutes);
 app.use('/api/audit-logs',  auditRoutes);
+app.use('/api/shifts',      shiftRoutes);
 
 // ─── Health Checks ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
