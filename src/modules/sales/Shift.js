@@ -17,6 +17,10 @@ const shiftSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    hasUpdatedOpeningBalance: {
+      type: Boolean,
+      default: false,
+    },
     closingBalance: {
       type: Number,
       default: null,

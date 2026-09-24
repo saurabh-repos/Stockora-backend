@@ -1,5 +1,6 @@
 const Shift = require('./Shift');
 const asyncHandler = require('../../core/utils/asyncHandler');
+const { logActivity } = require('../audit/auditService');
 
 // @desc    Open a new shift
 // @route   POST /api/shifts/open
@@ -76,8 +77,55 @@ const getCurrentShift = asyncHandler(async (req, res) => {
   res.json(shift);
 });
 
+// @desc    Update opening balance of the current shift (one-time)
+// @route   PUT /api/shifts/open
+// @access  Private
+const updateOpeningBalance = asyncHandler(async (req, res) => {
+  const { openingBalance } = req.body;
+
+  const shift = await Shift.findOne({
+    shop: req.user.shop,
+    user: req.user._id,
+    status: 'OPEN',
+  });
+
+  if (!shift) {
+    res.status(404);
+    throw new Error('No open shift found.');
+  }
+
+  if (shift.hasUpdatedOpeningBalance) {
+    res.status(400);
+    throw new Error('Starting cash can only be updated once per shift.');
+  }
+
+  const oldBalance = shift.openingBalance;
+  shift.openingBalance = openingBalance;
+  shift.hasUpdatedOpeningBalance = true;
+
+  await shift.save();
+
+  // Audit Log
+  await logActivity({
+    shop: req.user.shop,
+    user: req.user,
+    action: 'UPDATE_SHIFT_CASH',
+    entityType: 'Shift',
+    entityId: shift._id,
+    details: {
+      message: `Cashier updated starting cash from ₹${oldBalance} to ₹${openingBalance}`,
+      oldBalance,
+      newBalance: openingBalance
+    },
+    ipAddress: req.ip
+  });
+
+  res.json(shift);
+});
+
 module.exports = {
   openShift,
   closeShift,
   getCurrentShift,
+  updateOpeningBalance,
 };
