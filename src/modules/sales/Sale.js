@@ -63,14 +63,18 @@ const saleSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['PAID', 'UNPAID', 'PARTIAL', 'CANCELLED'],
+      enum: ['PAID', 'UNPAID', 'PARTIAL', 'CANCELLED', 'RETURNED'],
       default: 'PAID',
     },
     paymentMethod: {
       type: String,
-      enum: ['CASH', 'CARD', 'UPI', 'BANK_TRANSFER', 'CREDIT'],
+      enum: ['CASH', 'CARD', 'UPI', 'BANK_TRANSFER', 'CREDIT', 'SPLIT'],
       default: 'CASH',
     },
+    splitPayments: [{
+      method: { type: String, enum: ['CASH', 'CARD', 'UPI', 'BANK_TRANSFER', 'CREDIT'] },
+      amount: { type: Number, required: true }
+    }],
     soldBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

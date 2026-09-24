@@ -49,7 +49,7 @@ const getSales = asyncHandler(async (req, res) => {
 // @route   POST /api/sales
 // @access  Private
 const createSale = asyncHandler(async (req, res) => {
-  const { customer, walkInCustomerName, walkInCustomerPhone, walkInCustomerEmail, warehouse, items, paymentMethod, status, creditDueDate } = req.body;
+  const { customer, walkInCustomerName, walkInCustomerPhone, walkInCustomerEmail, warehouse, items, paymentMethod, splitPayments, status, creditDueDate } = req.body;
 
   if (!items || items.length === 0) {
     res.status(400);
@@ -64,8 +64,19 @@ const createSale = asyncHandler(async (req, res) => {
     
     let finalCustomerId = customer;
     
+    // Determine if this sale has any credit component
+    let hasCredit = paymentMethod === 'CREDIT';
+    let creditAmount = paymentMethod === 'CREDIT' ? 0 : 0; // Will be calculated after grandTotal for 'CREDIT'
+    if (paymentMethod === 'SPLIT' && splitPayments) {
+      const creditSplit = splitPayments.find(p => p.method === 'CREDIT');
+      if (creditSplit && creditSplit.amount > 0) {
+        hasCredit = true;
+        creditAmount = creditSplit.amount;
+      }
+    }
+
     // Quick-Add CRM for Walk-in Credit
-    if (paymentMethod === 'CREDIT') {
+    if (hasCredit) {
       if (!finalCustomerId && !walkInCustomerPhone) {
          throw new Error('Phone number is required to extend credit to a walk-in customer');
       }
@@ -113,10 +124,16 @@ const createSale = asyncHandler(async (req, res) => {
     }
 
     const grandTotal = subtotal + gstTotal;
+    
+    // Update creditAmount if it was full CREDIT
+    if (paymentMethod === 'CREDIT') creditAmount = grandTotal;
 
     let saleStatus = status || 'PAID';
     if (paymentMethod === 'CREDIT') {
       saleStatus = 'UNPAID';
+    } else if (paymentMethod === 'SPLIT') {
+      if (creditAmount === grandTotal) saleStatus = 'UNPAID';
+      else if (creditAmount > 0) saleStatus = 'PARTIAL';
     }
 
     // 2. Create the Sale record
@@ -132,7 +149,8 @@ const createSale = asyncHandler(async (req, res) => {
       grandTotal,
       status: saleStatus,
       paymentMethod: paymentMethod || 'CASH',
-      creditDueDate: paymentMethod === 'CREDIT' ? (creditDueDate || undefined) : undefined,
+      splitPayments: paymentMethod === 'SPLIT' ? splitPayments : undefined,
+      creditDueDate: hasCredit ? (creditDueDate || undefined) : undefined,
       soldBy: req.user._id
     });
 
@@ -179,10 +197,10 @@ const createSale = asyncHandler(async (req, res) => {
     }
 
     // 4. Update Customer Balance if Credit
-    if (paymentMethod === 'CREDIT' && finalCustomerId) {
+    if (hasCredit && finalCustomerId && creditAmount > 0) {
       await Customer.findByIdAndUpdate(
         finalCustomerId, 
-        { $inc: { outstandingBalance: grandTotal } },
+        { $inc: { outstandingBalance: creditAmount } },
         { session }
       );
     }
@@ -198,7 +216,96 @@ const createSale = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Process a return for a sale
+// @route   POST /api/sales/:id/return
+// @access  Private
+const returnSale = asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const sale = await Sale.findOne({ _id: req.params.id, shop: req.user.shop }).session(session);
+
+    if (!sale) {
+      throw new Error('Sale not found');
+    }
+
+    if (sale.status === 'RETURNED' || sale.status === 'CANCELLED') {
+      throw new Error('Sale is already returned or cancelled');
+    }
+
+    // Restock Inventory
+    for (const item of sale.items) {
+      const product = await Product.findOne({ _id: item.product, shop: req.user.shop }).session(session);
+      if (product) {
+        const updateResult = await Product.updateOne(
+          { 
+            _id: product._id, 
+            shop: req.user.shop,
+            'stockLocations.warehouse': sale.warehouse 
+          },
+          { 
+            $inc: { 
+              'stockLocations.$.quantity': item.quantity,
+              totalStock: item.quantity
+            } 
+          },
+          { session }
+        );
+
+        if (updateResult.modifiedCount > 0) {
+          const transaction = new InventoryTransaction({
+            shop: req.user.shop,
+            product: product._id,
+            type: 'IN',
+            quantity: item.quantity,
+            reference: sale.invoiceNumber + '-RET',
+            notes: `Sale Return (Invoice: ${sale.invoiceNumber})`,
+            warehouse: sale.warehouse,
+            user: req.user._id,
+          });
+          await transaction.save({ session });
+        }
+      }
+    }
+
+    // Reverse Credit if applicable
+    let hasCredit = sale.paymentMethod === 'CREDIT';
+    let creditAmount = sale.paymentMethod === 'CREDIT' ? sale.grandTotal : 0;
+    if (sale.paymentMethod === 'SPLIT' && sale.splitPayments) {
+      const creditSplit = sale.splitPayments.find(p => p.method === 'CREDIT');
+      if (creditSplit && creditSplit.amount > 0) {
+        hasCredit = true;
+        creditAmount = creditSplit.amount;
+      }
+    }
+
+    if (hasCredit && sale.customer && creditAmount > 0) {
+      await Customer.findByIdAndUpdate(
+        sale.customer, 
+        { $inc: { outstandingBalance: -creditAmount } },
+        { session }
+      );
+    }
+
+    // Update Sale Status
+    sale.status = 'RETURNED';
+    await sale.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({ message: 'Sale returned successfully', sale });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400);
+    throw new Error(error.message || 'Failed to process return');
+  }
+});
+
 module.exports = {
   getSales,
   createSale,
+  returnSale
 };
